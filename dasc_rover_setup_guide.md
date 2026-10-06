@@ -50,6 +50,7 @@ After modification, run
 make cubepilot_cubeorange
 ```
 again to build the firmwire. Flash this firmwire onto the PX4 Orange Cube.
+
 ---
 
 ## 3. QGC setup for PX4
@@ -63,11 +64,82 @@ Configure PX4 serial parameters via QGC MAVLink Console or Parameter tab:
 ## 4. Raspi Env Setup
 Setup the docker environment by following this repo:https://github.com/dasc-lab/robot-jumpstart
 
+The repo did not contain the Micro-XRCE-DDS-agent in it. After we set up the docker environment, run
+```bash
+docker ps -a
+``` 
+to check if the **robot-jumpstart-px4-1** docker env has been created.
+Then run
+```bash
+docker start robot-jumpstart-px4-1
+docker exec -it robot-jumpstart-px4-1 bash
+```
+to enter docker env. Before installing the missing part, we need to upgrade Cmake of python3.
+```bash
+apt-get update
+apt-get install -y git cmake build-essential
+apt-get install -y python3-pip
+python3 -m pip install --upgrade 'cmake==3.28.4'
+hash -r
+cmake --version
+```
+The last line should output a version higher than 3.20.
+
+Then run the following bash lines to install Micro-XRCE-DDS-agent:
+```bash
+cd /root
+git clone --branch v2.4.3 --depth 1 \
+  https://github.com/eProsima/Micro-XRCE-DDS-Agent.git
+
+cd Micro-XRCE-DDS-Agent
+mkdir -p build
+cd build
+cmake ..
+make -j2
+make install
+ldconfig
+```
+Check if it has been successfully installed:
+```bash
+MicroXRCEAgent --help
+```
+
 Verify that the **msg** directory  in Raspi is the same as PX4 firmware, otherwise the Raspi can't communicate with Cube Orange. To be specific, the PX4 will continously report **offboard_control_signal_lost: True** in the failsafe flag.
 
-If not, clone https://github.com/kalebbennaveed/px4_msgs/tree/d839e2fede12fd99b585c4b9c517572dcd92478f to replace the whole directory. 
+If not, 
+```bash
+cd /root/px4_ros_com_ros2/src
+rm -r px4_msgs/
+git clone https://github.com/kalebbennaveed/px4_msgs.git
+cd /root/px4_ros_com_ros2/src/px4_msgs
+git checkout d839e2fede12fd99b585c4b9c517572dcd92478f
+```
+to replace the whole **px4_msg** directory. 
 
-Add the corresponding **OffboardControlMode.msg** and **ActuatorMotors.msg** to the CMakelist in px4_msg directory on Raspi. This is because we need them to control the motor through PX4. Those two files correspond to the dds_topic.yaml modification in the git commit in PX4 firmware repo:https://github.com/ShihanTang2005/PX4-Autopilot-Quad/commit/fc326c0446a0d4be33a3b65102c4d4c41cbeeb32. 
+Add the corresponding **OffboardControlMode.msg** and **ActuatorMotors.msg** to the CMakelist in px4_msg directory on Raspi. 
+```bash
+nano /root/px4_ros_com_ros2/src/px4_msgs/CMakeLists.txt 
+```
+Add the two msg into the **set()**.
+This is because we need them to control the motor through PX4. Those two files correspond to the dds_topic.
+
+
+```bash
+colcon build --symlink-install --packages-select px4_msgs
+source install/setup.bash
+```
+After replacing the original directory, run the following lines to test if it is successful:
+```python
+>>> from px4_msgs.msg import TrajectorySetpoint
+>>> msg = TrajectorySetpoint()
+>>> print(msg)
+px4_msgs.msg.TrajectorySetpoint(timestamp=0, position=array([0., 0., 0.], dtype=float32), velocity=array([0., 0., 0.], dtype=float32), acceleration=array([0., 0., 0.], dtype=float32), jerk=array([0., 0., 0.], dtype=float32), yaw=0.0, yawspeed=0.0, raw_mode=False, cmd=array([0., 0., 0., 0.], dtype=float32))
+>>> hasattr(msg,"velocity")
+True
+>>> hasattr(msg,"vx")
+False
+>>> 
+```
 
 Then 
 ```bash
