@@ -56,7 +56,7 @@ again to build the firmwire. Flash this firmwire onto the PX4 Orange Cube.
 
 Configure PX4 serial parameters via QGC MAVLink Console or Parameter tab:
 * **`XRCE_DDS_CFG`**: Set to `TELEM1`.
-* **`SER_TEL1_BAUD`**: Set to `921600`.
+* **`SER_TEL1_BAUD`**: Set to `921600`. I remembered that with a baudrate below 115200 the communication will fail. 
 * **`XRCE_DDS_DOM_ID`**: Set to `4` (or your group's domain ID).
 * **Battery Configuration:** Update battery cell count in PX4 parameters (`3S` battery setup) to avoid false low-battery safety triggers. Also, calibrate the actual voltage of the battery in Parameter Tab or the command tab on the top in QGC.
 
@@ -89,10 +89,11 @@ ros2 topic list -t
 
 ---
 
-## 4. Hardware Wiring & Motor Driver Setup
+## 5. Hardware Wiring & Motor Driver Setup
 
 ### Pin Wiring
-* **PX4 Main Signals:** Connect Main Output 2 to RoboClaw S1, Main Output 4 to RoboClaw S2, and establish a common GND connection between PX4 and RoboClaw.
+* **PX4 Main Signals:** Connect Main Output 1 to RoboClaw S1, Main Output 2 to RoboClaw S2, and establish a common GND connection between PX4 and RoboClaw.
+* **Roboclaw and Motor Wiring:** Connect the 2 pairs of yellow and green wires of the motors to EN1 & EN2. This is for the Roboclaw to read the encoder values. Connect the 2 pairs of red and black wires on the same strand to the 2 [+ -]. Note connect red to + and black to -. 
 
 
 ### RoboClaw Setup (PWM Mode)
